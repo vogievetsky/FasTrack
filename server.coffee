@@ -124,6 +124,10 @@ app.get '/geo', (req, res) ->
   Region: #{geo.region}
   City: #{geo.city}
   IPs: #{req.ips}
+
+  ============================
+
+  #{JSON.stringify(req)}
   """
   return
 
