@@ -116,7 +116,7 @@
       region: 'NoIP',
       city: 'NoIP'
     };
-    res.send("IP: " + ip + "\nCountry: " + geo.country + "\nRegion: " + geo.region + "\nCity: " + geo.city);
+    res.send("IP: " + ip + "\nCountry: " + geo.country + "\nRegion: " + geo.region + "\nCity: " + geo.city + "\nIPs: " + req.ips);
   });
 
   console.log("Started server.");

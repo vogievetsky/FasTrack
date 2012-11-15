@@ -122,6 +122,7 @@ app.get '/geo', (req, res) ->
   Country: #{geo.country}
   Region: #{geo.region}
   City: #{geo.city}
+  IPs: #{req.ips}
   """
   return
 
