@@ -1,0 +1,69 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>jQuery UI Sortable - Default functionality</title>
+    <script src="http://localhost:8282/script.js"></script>
+    <link rel="stylesheet" href="http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css" />
+    <script src="http://code.jquery.com/jquery-1.8.2.js"></script>
+    <script src="http://code.jquery.com/ui/1.9.1/jquery-ui.js"></script>
+    <style>
+    #sortable {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+      width: 200px;
+    }
+
+    #sortable li {
+      margin: 0 3px 3px 3px;
+      padding: 0.4em;
+      padding-left: 1.5em;
+      font-size: 1.4em;
+      height: 18px;
+      background: cyan;
+      border: 1px solid gray;
+    }
+
+    table {
+      width: 400px;
+
+    }
+
+    .fixed {
+      width: 120px;
+    }
+    </style>
+    <script>
+    $(function() {
+        $( "#sortable" ).sortable();
+        $( "#sortable" ).disableSelection();
+
+        setTimeout(function() {
+          if (!window.track) {
+            alert('Poops')
+            return
+          }
+          flextrack({ a: 'Hello', b: 'World', d: 4})
+          setTimeout(function() {
+            flextrack({ a: 'googo', c: 'gaga', d: 4})
+          }, 50)
+        }, 100)
+    });
+    </script>
+</head>
+<body>
+
+<ul id="sortable">
+    <li>Item 1</li>
+    <li>Item 2</li>
+    <li>Item 3</li>
+    <li>Item 4</li>
+    <li>Item 5</li>
+    <li>Item 6</li>
+    <li>Item 7</li>
+</ul>
+
+</body>
+</html>
