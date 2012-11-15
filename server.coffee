@@ -9,6 +9,7 @@ config = require('./config')
 app.use(useragent.express())
 app.use(express.compress())
 app.disable('x-powered-by')
+app.enable('trust proxy')
 
 emptyGif = Buffer('\x47\x49\x46\x38\x39\x61\x01
 \x00\x01\x00\xf0\x01\x00\xff\xff\xff\x00\x00\x00
