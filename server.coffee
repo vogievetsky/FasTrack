@@ -123,11 +123,8 @@ app.get '/geo', (req, res) ->
   Country: #{geo.country}
   Region: #{geo.region}
   City: #{geo.city}
-  IPs: #{req.ips}
-
-  ============================
-
-  #{JSON.stringify(req)}
+  IPs: [#{req.ips}]
+  X-Forwarded-For: #{req.get('X-Forwarded-For')}
   """
   return
 
