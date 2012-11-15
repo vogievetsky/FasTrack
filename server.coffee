@@ -27,10 +27,7 @@ script = """
     a.S_ = +new Date() - initTime;
     a.R_ = document.referrer || 'Direct';
     var params = [];
-    for (var k in a) {
-      var v = a[k];
-      params.push(encodeURIComponent(k) + "=" + encodeURIComponent(String(v)));
-    }
+    for (var k in a) params.push(encodeURIComponent(k) + "=" + encodeURIComponent(String(a[k])));
     var i = new Image();
     i.src = 'http://' + c.h + '/m.gif?' + params.join('&');
     return true;
@@ -60,7 +57,7 @@ app.get '/m.gif', (req, res) ->
   if events.length and currentFile isnt file
     fs.writeFile "track/#{currentFile}", events.join('\n'), (err) ->
       if err
-        console.log 'Error in write'
+        console.log 'Error in write', err
       else
         console.log 'File written'
       return
@@ -101,7 +98,9 @@ app.get '/m.gif', (req, res) ->
 
   event['Language'] = req.acceptedLanguages[0] or 'N/A'
 
-  events.push(JSON.stringify(event))
+  event = JSON.stringify(event)
+  console.log "T: #{event}"
+  events.push(event)
 
   res.set('Content-Type', 'image/gif')
   res.send(emptyGif)
@@ -109,6 +108,21 @@ app.get '/m.gif', (req, res) ->
 
 app.get '/ping', (req, res) ->
   res.send('pong')
+  return
+
+app.get '/geo', (req, res) ->
+  ip = req.ip
+  geo = geoip.lookup(ip) or {
+    country: 'NoIP'
+    region: 'NoIP'
+    city: 'NoIP'
+  }
+  res.send """
+  IP: #{ip}
+  Country: #{geo.country}
+  Region: #{geo.region}
+  City: #{geo.city}
+  """
   return
 
 console.log "Started server."

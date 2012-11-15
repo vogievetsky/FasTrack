@@ -31,7 +31,7 @@
     h: 'localhost:9090'
   };
 
-  script = "(function(c) {\n  var initTime = +new Date();\n  window.flextrack = function(a) {\n    if (Object.prototype.toString.call(a) != '[object Object]') return false;\n    a.P_ = document.location.pathname;\n    a.S_ = +new Date() - initTime;\n    a.R_ = document.referrer || 'Direct';\n    var params = [];\n    for (var k in a) {\n      var v = a[k];\n      params.push(encodeURIComponent(k) + \"=\" + encodeURIComponent(String(v)));\n    }\n    var i = new Image();\n    i.src = 'http://' + c.h + '/m.gif?' + params.join('&');\n    return true;\n  };\n})(" + (JSON.stringify(clientConfig)) + ");";
+  script = "(function(c) {\n  var initTime = +new Date();\n  window.flextrack = function(a) {\n    if (Object.prototype.toString.call(a) != '[object Object]') return false;\n    a.P_ = document.location.pathname;\n    a.S_ = +new Date() - initTime;\n    a.R_ = document.referrer || 'Direct';\n    var params = [];\n    for (var k in a) params.push(encodeURIComponent(k) + \"=\" + encodeURIComponent(String(a[k])));\n    var i = new Image();\n    i.src = 'http://' + c.h + '/m.gif?' + params.join('&');\n    return true;\n  };\n})(" + (JSON.stringify(clientConfig)) + ");";
 
   events = [];
 
@@ -54,7 +54,7 @@
     if (events.length && currentFile !== file) {
       fs.writeFile("track/" + currentFile, events.join('\n'), function(err) {
         if (err) {
-          console.log('Error in write');
+          console.log('Error in write', err);
         } else {
           console.log('File written');
         }
@@ -97,13 +97,26 @@
     event['OS'] = ua.OS || 'N/A';
     event['Platform'] = ua.Platform || 'N/A';
     event['Language'] = req.acceptedLanguages[0] || 'N/A';
-    events.push(JSON.stringify(event));
+    event = JSON.stringify(event);
+    console.log("T: " + event);
+    events.push(event);
     res.set('Content-Type', 'image/gif');
     res.send(emptyGif);
   });
 
   app.get('/ping', function(req, res) {
     res.send('pong');
+  });
+
+  app.get('/geo', function(req, res) {
+    var geo, ip;
+    ip = req.ip;
+    geo = geoip.lookup(ip) || {
+      country: 'NoIP',
+      region: 'NoIP',
+      city: 'NoIP'
+    };
+    res.send("IP: " + ip + "\nCountry: " + geo.country + "\nRegion: " + geo.region + "\nCity: " + geo.city);
   });
 
   console.log("Started server.");
