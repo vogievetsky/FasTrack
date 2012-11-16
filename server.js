@@ -68,7 +68,7 @@
     h: config.host
   };
 
-  script = "(function(c) {\n  try {\n    var num = 0;\n    var initTime = +new Date();\n    window.flextrack = function(a) {\n      if (Object.prototype.toString.call(a) != '[object Object]') return false;\n      c.N_ = num++;\n      a.P_ = document.location.pathname;\n      a.S_ = +new Date() - initTime;\n      a.R_ = document.referrer || 'Direct';\n      var params = [];\n      for (var k in a) params.push(encodeURIComponent(k) + \"=\" + encodeURIComponent(String(a[k])));\n      var i = new Image();\n      i.src = 'http://' + c.h + '/m.gif?' + params.join('&');\n      return true;\n    };\n  } catch (e) {}\n})(" + (JSON.stringify(clientConfig)) + ");";
+  script = "(function(c) {\n  try {\n    var num = 0;\n    var initTime = +new Date();\n    window.flextrack = function(a) {\n      if (Object.prototype.toString.call(a) != '[object Object]') return false;\n      a.N_ = num++;\n      a.P_ = document.location.pathname;\n      a.S_ = +new Date() - initTime;\n      a.R_ = document.referrer || 'Direct';\n      var params = [];\n      for (var k in a) params.push(encodeURIComponent(k) + \"=\" + encodeURIComponent(String(a[k])));\n      var i = new Image();\n      i.src = 'http://' + c.h + '/m.gif?' + params.join('&');\n      return true;\n    };\n  } catch (e) {}\n})(" + (JSON.stringify(clientConfig)) + ");";
 
   events = [];
 
