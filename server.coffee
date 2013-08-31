@@ -1,44 +1,81 @@
 fs = require('fs')
 geoip = require('geoip-lite')
+https = require('https')
 express = require('express')
 useragent = require('express-useragent')
-knox = require('knox')
 app = express()
 config = require('./config')
 
-debug = false
+debug = 1 # false
 
-if config.s3
-  console.log 'Got S3 config'
-  client = knox.createClient(config.s3)
-  sendFilesToS3 = ->
-    fs.readdir 'track', (err, files) ->
-      if err
-        console.log "ERROR: Can not read dir"
-        return
+events = []
 
-      files.forEach (file) ->
-        myFile = "track/" +  file
-        s3File = "/" + (config.s3.path or '') + file
-        console.log "Sending #{myFile} to S3"
-        client.putFile myFile, s3File, (err, res) ->
-          if err or res.statusCode isnt 200
-            console.log("ERROR: Failed to upload #{myFile} to #{s3File} [#{res.statusCode} #{err}]")
-            return
+if config.kafka
+  console.log 'Got kafka config'
+  sending = false
+  lastSend = new Date()
+  sendEvents = ->
+    return if sending
+    return unless events.length
+    now = new Date()
+    return if events.length < 1000 and now - lastSend < 1000
+    lastSend = now
 
-          fs.unlink myFile, (err) ->
-            if err
-              console.log("ERROR: Failed to delete #{myFile}")
-              return
+    sending = true
+    req = https.request {
+      method: 'POST'
+      host: config.kafka.host
+      port: config.kafka.port or 443
+      path: config.kafka.path
+      auth: config.kafka.username + ':' + config.kafka.password
+    }, (res) ->
+      if 200 <= res.statusCode < 300
+        # Ok ^_^
+        console.log('Received ^_^')
+      else
+        console.log('STATUS: ' + res.statusCode)
+        console.log('HEADERS: ' +  JSON.stringify(res.headers))
 
-          return
-        return
+      # chunks = []
+      # res.on 'data', (chunk) ->
+      #   chunks.push(chunk)
+      #   return
+
+      # res.on 'close', (err) ->
+      #   callback({
+      #     error: 'close'
+      #     message: err
+      #   })
+      #   return
+
+      # res.on 'end', ->
+      #   console.log  chunks.join('')
+
+      events = []
+      sending = false
       return
+
+    req.on 'error', (e) ->
+      console.log('problem with request: ' + e.message);
+
+    # write data to request body
+    for event in events
+      eventStr = JSON.stringify(event)
+      console.log JSON.stringify(event) if debug
+      req.write(JSON.stringify(event) + '\n')
+
+    req.end()
     return
+
 else
-  console.log 'No S3 config'
-  sendFilesToS3 = ->
+  console.log 'No kafka config'
+  sendEvents = ->
+    for event in events
+      console.log('Event:', JSON.stringify(event))
+    events = []
     return
+
+setInterval(sendEvents, 200)
 
 app.use(useragent.express())
 app.use(express.compress())
@@ -54,28 +91,44 @@ clientConfig = {
   h: config.host
 }
 script = """
-(function(c) {
+(function(w,c) {
   try {
+    var session = 'S' + (Math.random() * 1e10).toFixed();
     var num = 0;
-    var initTime = +new Date();
-    window.flextrack = function(a) {
+    var now = new Date();
+    var initTime = +now;
+    var tzm = String(now).match(/\\((\\w+)\\)/);
+    w.flextrack = function(a) {
       if (Object.prototype.toString.call(a) != '[object Object]') return false;
-      a.N_ = num++;
-      a.P_ = document.location.pathname;
-      a.S_ = +new Date() - initTime;
-      a.R_ = document.referrer || 'Direct';
+      var a = {
+        S: session,
+        N: num++,
+        P: document.location.pathname,
+        L: +new Date() - initTime,
+        F: w.document.referrer || 'Direct',
+        C: screen.width + 'x' + screen.height,
+        X: w.scrollX,
+        Y: w.scrollY,
+        O: now.getTimezoneOffset(),
+        Z: (tzm && tzm.length === 2) ? tzm[1] : 'N/A'
+      };
+      if ('innerWidth' in window) {
+        a.W = w.innerWidth + 'x' + w.innerHeight;
+      } else {
+        var e = w.document.documentElement || w.document.body;
+        a.W = w.clientWidth + 'x' + w.clientHeight;
+      }
       var params = [];
       for (var k in a) params.push(encodeURIComponent(k) + "=" + encodeURIComponent(String(a[k])));
       var i = new Image();
       i.src = 'http://' + c.h + '/m.gif?' + params.join('&');
       return true;
     };
-  } catch (e) {}
-})(#{JSON.stringify(clientConfig)});
+  }catch(e){}
+})(window,#{JSON.stringify(clientConfig)});
 """
 
 events = []
-currentFile = null
 
 app.get '/script.js', (req, res) ->
   res.set('Content-Type', 'application/javascript')
@@ -87,60 +140,47 @@ app.get '/m.gif', (req, res) ->
     res.send(500)
     return
 
-  time = (new Date()).toISOString()
-
-  # Flush events if needed
-  file = 'track-' + time.replace(/:\d\d\.\d\d\dZ$/, '') + '.json'
-
-  console.log "I have #{events.length} events for #{file}" if debug
-  if events.length and currentFile isnt file
-    fs.writeFile "track/#{currentFile}", events.join('\n'), (err) ->
-      if err
-        console.log 'ERROR: Could not write file', err
-        return
-
-      setTimeout(sendFilesToS3, 50)
-      return
-    events = []
-
-  currentFile = file
-
   event = {}
-  for k, v of req.query
-    k = 'Number' if k is 'N_'
-    k = 'Path' if k is 'P_'
-    k = 'Referrer' if k is 'R_'
-    k = 'SessionLength' if k is 'S_'
+  for own k, v of req.query
+    k = 'session' if k is 'S'
+    k = 'number' if k is 'N'
+    k = 'path' if k is 'P'
+    k = 'referrer' if k is 'F'
+    k = 'window' if k is 'W'
+    k = 'screen' if k is 'C'
+    k = 'timezone' if k is 'Z'
+    k = 'timezone_offset' if k is 'O'
+    k = 'session_length' if k is 'L'
+    k = 'scroll_x' if k is 'X'
+    k = 'scroll_y' if k is 'Y'
     event[k] = v
 
   # Make sure that Time overrides whatever is already named time
-  event['Time'] = time
+  event['timestamp'] = (new Date()).toISOString()
 
   ip = req.ip
-  event['IP'] = ip
+  event['ip'] = ip
 
   geo = geoip.lookup(ip) or {
-    country: 'NoIP'
-    region: 'NoIP'
-    city: 'NoIP'
-    ll: [0, 0]
+    country: 'NoGeo'
+    region: 'NoGeo'
+    city: 'NoGeo'
+    ll: ['', '']
   }
-  event['Country'] = geo.country or 'N/A'
-  event['Region'] = geo.region or 'N/A'
-  event['City'] = geo.city or 'N/A'
-  event['Lat'] = geo.ll[0] #ll: [ 37.9746, -122.5616 ]
-  event['Lon'] = geo.ll[1]
+  event['country'] = geo.country or 'N/A'
+  event['region'] = geo.region or 'N/A'
+  event['city'] = geo.city or 'N/A'
+  event['lat'] = geo.ll[0] #ll: [ 37.9746, -122.5616 ]
+  event['lon'] = geo.ll[1]
 
   ua = req.useragent
-  event['Browser'] = ua.Browser or 'N/A'
-  event['BrowserVersion'] = ua.Version or 'N/A'
-  event['OS'] = ua.OS or 'N/A'
-  event['Platform'] = ua.Platform or 'N/A'
+  event['browser'] = ua.Browser or 'N/A'
+  event['browser_version'] = ua.Version or 'N/A'
+  event['os'] = ua.OS or 'N/A'
+  event['platform'] = ua.Platform or 'N/A'
 
-  event['Language'] = req.acceptedLanguages[0] or 'N/A'
+  event['language'] = req.acceptedLanguages[0] or 'N/A'
 
-  event = JSON.stringify(event)
-  #console.log "T: #{event}"
   events.push(event)
 
   res.set('Content-Type', 'image/gif')
@@ -154,9 +194,9 @@ app.get '/ping', (req, res) ->
 app.get '/geo', (req, res) ->
   ip = req.ip
   geo = geoip.lookup(ip) or {
-    country: 'NoIP'
-    region: 'NoIP'
-    city: 'NoIP'
+    country: 'NoGeo'
+    region: 'NoGeo'
+    city: 'NoGeo'
   }
   res.send """
   IP: #{ip}
