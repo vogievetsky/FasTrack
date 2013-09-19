@@ -1,0 +1,108 @@
+#!/bin/bash -e
+echo "starting node module install"
+
+NPM_INSTALL='npm install'
+NPM_INSTALL_DIR="`pwd`/node_modules"
+NPM_OUTPUT=`npm ls -lp || true`
+SYSTEM="${SYSTEM:-`uname -sm | tr ' ' -`}"
+
+installed() {
+  name="$1"
+  version="$2"
+  echo "$NPM_OUTPUT" | grep "$NPM_INSTALL_DIR/$name:$name@$version:" >/dev/null
+}
+
+module_tarball_name() {
+  name="$1"
+  version="$2"
+  echo "node_modules-$name-$version-$SYSTEM.tar.gz"
+}
+
+found_on_bucket() {
+  name="$1"
+  version="$2"
+  local MODULE_TAR=$(module_tarball_name $name $version)
+  local MODULE_FOUND=`s3cmd ls s3://metamx-galaxy-bin/binaries/$MODULE_TAR`
+  if [ -n "$MODULE_FOUND" ]; then
+    echo "$MODULE_TAR"
+  else
+    echo ""
+  fi
+}
+
+#In case you have node_modules directory in the parent directories.
+mkdir -p $NPM_INSTALL_DIR/.bin
+
+#NOTE: if you modify node modules, increment node-modules build version manually in project/node_modules
+
+while read name version flags; do
+  if [ -n "$name" ]; then
+    echo "Processing $name@$version"
+    if [ -z "$flags" ] && installed $name $version; then
+      echo "Skipping $name@$version, already installed"
+    else
+      MODULE_TAR=$(module_tarball_name $name $version)
+      MODULE_FOUND=$(found_on_bucket $name $version)
+      if [ -n "$MODULE_FOUND" ]; then
+        echo
+        echo "$MODULE_TAR exists at s3 bucket"
+        s3cmd --force get s3://metamx-galaxy-bin/binaries/$MODULE_TAR
+        tar -zxvf $MODULE_TAR
+        rm $MODULE_TAR
+        for f in $(ls -d $NPM_INSTALL_DIR/$name/bin/*); do ln -sf $f $NPM_INSTALL_DIR/.bin/; done
+        echo
+      else
+        cmd="$NPM_INSTALL --force $name@$version $flags --quiet"
+        echo
+        echo "$MODULE_TAR doesn't exist at s3 bucket"
+        echo $cmd
+        $cmd
+        echo
+      fi
+    fi
+  fi
+done < "./project/node_modules"
+# Note do not upgrade to gzippo 0.2.0 until this is resolved https://github.com/tomgco/gzippo/issues/47
+
+while read account project tag dest other; do
+  if [ -n "$account" ]; then
+
+    INFO_FILE="$NPM_INSTALL_DIR/$dest/_module_info.txt"
+    INFO_CONTENT="$account $project $tag $dest $version"
+    DESTINATION="$NPM_INSTALL_DIR/$dest"
+
+    if [ -n "$other" ]; then
+      echo "trailing arguments: '$other', after: '$INFO_CONTENT'"
+      exit 1
+    fi
+
+    echo "Processing $account/$dest@$tag"
+    if [ -r "$INFO_FILE" ] && [ "`cat "$INFO_FILE"`" = "$INFO_CONTENT" ]; then
+      echo "Skipping $dest@$tag, already installed"
+    else
+      if [ -d "$DESTINATION" ]; then
+        echo "cleaning up $DESTINATION"
+        rm -r "$DESTINATION"
+      fi
+      MODULE_TAR=$(module_tarball_name $account-$project $version)
+      MODULE_FOUND=$(found_on_bucket $account-$project $version)
+      if [ -n "$MODULE_FOUND" ]; then
+        echo
+        echo "$MODULE_TAR exists at s3 bucket"
+        s3cmd --force get s3://metamx-galaxy-bin/binaries/$MODULE_TAR
+        tar -zxvf $MODULE_TAR
+        rm $MODULE_TAR
+        for f in $(ls -d $NPM_INSTALL_DIR/$dest/bin/*); do ln -sf $f $NPM_INSTALL_DIR/.bin/; done
+        echo
+      else
+        cmd="npm install -f https://github.com/$account/$project/tarball/$tag"
+        echo
+        echo "$MODULE_TAR doesn't exist at s3 bucket"
+        echo "$cmd"
+        $cmd
+        echo "$INFO_CONTENT" > "$INFO_FILE"
+        echo
+      fi
+    fi
+  fi
+done < "./project/custom_node_modules"
