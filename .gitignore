@@ -6,5 +6,5 @@ galaxy/tar
 galaxy/dist
 project/current_release
 
-config.js
+asset/config.js
 notes
