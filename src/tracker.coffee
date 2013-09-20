@@ -256,5 +256,5 @@ app.get '/stats', (req, res) ->
   """
   return
 
-console.log "Started server on port 9090"
+console.log "FasTrack started server on port 9090"
 app.listen(9090)
