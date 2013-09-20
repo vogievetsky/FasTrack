@@ -187,6 +187,10 @@ app.get '/m.gif', (req, res) ->
   res.send(emptyGif)
   return
 
+app.get '/health', (req, res) ->
+  res.send('I feel fine')
+  return
+
 app.get '/ping', (req, res) ->
   res.send('pong')
   return

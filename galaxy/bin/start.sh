@@ -2,4 +2,4 @@
 
 . conf/environment
 
-exec node server.js
+exec node tracker.js
