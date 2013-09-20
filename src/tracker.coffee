@@ -6,9 +6,12 @@ useragent = require('express-useragent')
 app = express()
 config = require('./config')
 
-debug = 1 # false
+debug = false
 
 events = []
+numEvents = 0
+lastEventTime = 'N/A'
+eventTrail = []
 
 if config.kafka
   console.log 'Got kafka config'
@@ -128,8 +131,6 @@ script = """
 })(window,#{JSON.stringify(clientConfig)});
 """
 
-events = []
-
 app.get '/script.js', (req, res) ->
   res.set('Content-Type', 'application/javascript')
   res.send(script)
@@ -182,16 +183,22 @@ app.get '/m.gif', (req, res) ->
   event['language'] = req.acceptedLanguages[0] or 'N/A'
 
   events.push(event)
+  eventTrail.unshift(event)
+  eventTrail.pop() while eventTrail.length > 10
+  numEvents++
+  lastEventTime = event['timestamp']
 
   res.set('Content-Type', 'image/gif')
   res.send(emptyGif)
   return
 
 app.get '/health', (req, res) ->
+  res.set('Content-Type', 'text/plain')
   res.send('I feel fine')
   return
 
 app.get '/ping', (req, res) ->
+  res.set('Content-Type', 'text/plain')
   res.send('pong')
   return
 
@@ -226,6 +233,27 @@ app.get '/geo', (req, res) ->
 
   res.set('Content-Type', 'text/plain')
   res.send(ret)
+  return
+
+startTime = Date.now()
+app.get '/stats', (req, res) ->
+  uptimeSeconds = Math.floor((Date.now() - startTime) / 1000)
+  uptimeMinutes = Math.floor(uptimeSeconds / 60); uptimeSeconds = uptimeSeconds % 60
+  uptimeHours =   Math.floor(uptimeMinutes / 60); uptimeMinutes = uptimeMinutes % 60
+  uptimeDays =    Math.floor(uptimeHours / 24);   uptimeHours = uptimeHours % 24
+
+  eventTrailStr = eventTrail.map((event) -> JSON.stringify(event)).join('\n\n') or '<empty>'
+
+  res.set('Content-Type', 'text/plain')
+  res.send """
+  Stats:
+    Uptime: #{uptimeDays}D #{uptimeHours}H #{uptimeMinutes}M #{uptimeSeconds}S
+    Number of events: #{numEvents}
+    Last event time: #{lastEventTime}
+
+  Event trail:
+  #{eventTrailStr}
+  """
   return
 
 console.log "Started server on port 9090"
