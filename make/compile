@@ -1,3 +1,3 @@
 #!/bin/bash
 coffee --compile --output target/ src/tracker.coffee
-cp -r asset/ target/
+cp -r asset/geo-data/ target/geo-data/
