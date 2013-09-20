@@ -1,5 +1,5 @@
 .sass-cache
-node
+node/
 node_modules/
 target/
 galaxy/tar
