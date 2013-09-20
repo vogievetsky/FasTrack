@@ -202,13 +202,32 @@ app.get '/geo', (req, res) ->
     region: 'NoGeo'
     city: 'NoGeo'
   }
-  res.send """
-  IP: #{ip}
-  Country: #{geo.country}
-  Region: #{geo.region}
-  City: #{geo.city}
-  IPs: [#{req.ips}]
+  ret = """
+  Your info:
+    IP: #{ip}
+    Country: #{geo.country}
+    Region: #{geo.region}
+    City: #{geo.city}
+    IPs: [#{req.ips}]
   """
+
+  ip = '173.247.199.2' # MMX IP :-)
+  geo = geoip.lookup(ip) or {
+    country: 'NoGeo'
+    region: 'NoGeo'
+    city: 'NoGeo'
+  }
+  ret += '\n\n' + """
+  Test info:
+    IP: #{ip}
+    Country: #{geo.country}
+    Region: #{geo.region}
+    City: #{geo.city}
+    IPs: [#{req.ips}]
+  """
+
+  res.set('Content-Type', 'text/plain')
+  res.send(ret)
   return
 
 console.log "Started server on port 9090"
