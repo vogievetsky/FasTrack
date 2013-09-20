@@ -208,7 +208,6 @@ app.get '/geo', (req, res) ->
     Country: #{geo.country}
     Region: #{geo.region}
     City: #{geo.city}
-    IPs: [#{req.ips}]
   """
 
   ip = '173.247.199.2' # MMX IP :-)
@@ -223,7 +222,6 @@ app.get '/geo', (req, res) ->
     Country: #{geo.country}
     Region: #{geo.region}
     City: #{geo.city}
-    IPs: [#{req.ips}]
   """
 
   res.set('Content-Type', 'text/plain')
