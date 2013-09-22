@@ -90,18 +90,15 @@ emptyGif = Buffer('\x47\x49\x46\x38\x39\x61\x01
 \x21\xf9\x04\x01\x0a\x00\x00\x00\x2c\x00\x00\x00
 \x00\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3b')
 
-clientConfig = {
-  h: config.host
-}
 script = """
-(function(w,c) {
+(function(w,h) {
   try {
     var session = 'S' + (Math.random() * 1e10).toFixed();
     var num = 0;
     var now = new Date();
     var initTime = +now;
     var tzm = String(now).match(/\\((\\w+)\\)/);
-    w.flextrack = function(a) {
+    w.fastrack = function(a) {
       if (Object.prototype.toString.call(a) != '[object Object]') return false;
       var a = {
         S: session,
@@ -124,11 +121,11 @@ script = """
       var params = [];
       for (var k in a) params.push(encodeURIComponent(k) + "=" + encodeURIComponent(String(a[k])));
       var i = new Image();
-      i.src = 'http://' + c.h + '/m.gif?' + params.join('&');
+      i.src = 'http://' + h + '/m.gif?' + params.join('&');
       return true;
     };
   }catch(e){}
-})(window,#{JSON.stringify(clientConfig)});
+})(window,#{JSON.stringify(config.host)});
 """
 
 app.get '/script.js', (req, res) ->
@@ -242,7 +239,7 @@ app.get '/stats', (req, res) ->
   uptimeHours =   Math.floor(uptimeMinutes / 60); uptimeMinutes = uptimeMinutes % 60
   uptimeDays =    Math.floor(uptimeHours / 24);   uptimeHours = uptimeHours % 24
 
-  eventTrailStr = eventTrail.map((event) -> JSON.stringify(event)).join('\n\n') or '<empty>'
+  eventTrailStr = eventTrail.map((event) -> JSON.stringify(event, null, 2)).join('\n\n') or '<empty>'
 
   res.set('Content-Type', 'text/plain')
   res.send """
@@ -251,7 +248,8 @@ app.get '/stats', (req, res) ->
     Number of events: #{numEvents}
     Last event time: #{lastEventTime}
 
-  Event trail:
+  Event trail (last 10 events):
+
   #{eventTrailStr}
   """
   return
