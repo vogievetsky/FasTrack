@@ -41,13 +41,13 @@
         $( "#sortable" ).disableSelection();
 
         setTimeout(function() {
-          if (!window.flextrack) {
+          if (!window.fastrack) {
             alert('Poops')
             return
           }
-          flextrack({ a: 'Hello', b: 'World', d: 4})
+          fastrack({ a: 'Hello', b: 'World', d: 4})
           setTimeout(function() {
-            flextrack({ a: 'googo', c: 'gaga', d: 4})
+            fastrack({ a: 'googo', c: 'gaga', d: 4})
           }, 50)
         }, 100)
     });

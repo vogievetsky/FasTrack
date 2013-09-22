@@ -190,7 +190,8 @@ app.get '/m.gif', (req, res) ->
     language = languageLookup(languageCode)
     language = "Unknown (#{languageCode})" unless language
   else
-    event['language'] = 'N/A'
+    language = 'N/A'
+  event['language'] = language
 
   events.push(event)
   eventTrail.unshift(event)
