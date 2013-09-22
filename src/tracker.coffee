@@ -9,8 +9,10 @@ config = require('./config')
 debug = false
 
 events = []
-numEvents = 0
-lastEventTime = 'N/A'
+numReceivedEvents = 0
+numSentEvents = 0
+numBadKafkaPosts = 0
+
 eventTrail = []
 
 if config.kafka
@@ -22,9 +24,12 @@ if config.kafka
     return unless events.length
     now = new Date()
     return if events.length < 1000 and now - lastSend < 1000
-    lastSend = now
 
     sending = true
+    lastSend = now
+    eventsToSend = events
+    events = []
+
     req = https.request {
       method: 'POST'
       host: config.kafka.host
@@ -33,9 +38,10 @@ if config.kafka
       auth: config.kafka.username + ':' + config.kafka.password
     }, (res) ->
       if 200 <= res.statusCode < 300
-        # Ok ^_^
-        console.log('Received ^_^')
+        numSentEvents += eventsToSend.length
       else
+        numBadKafkaPosts++
+        console.log('----------------------------------------------')
         console.log('STATUS: ' + res.statusCode)
         console.log('HEADERS: ' +  JSON.stringify(res.headers))
 
@@ -54,7 +60,6 @@ if config.kafka
       # res.on 'end', ->
       #   console.log  chunks.join('')
 
-      events = []
       sending = false
       return
 
@@ -62,10 +67,10 @@ if config.kafka
       console.log('problem with request: ' + e.message);
 
     # write data to request body
-    for event in events
+    for event in eventsToSend
       eventStr = JSON.stringify(event)
-      console.log JSON.stringify(event) if debug
-      req.write(JSON.stringify(event) + '\n')
+      console.log eventStr if debug
+      req.write(eventStr + '\n')
 
     req.end()
     return
@@ -182,8 +187,7 @@ app.get '/m.gif', (req, res) ->
   events.push(event)
   eventTrail.unshift(event)
   eventTrail.pop() while eventTrail.length > 10
-  numEvents++
-  lastEventTime = event['timestamp']
+  numReceivedEvents++
 
   res.set('Content-Type', 'image/gif')
   res.send(emptyGif)
@@ -245,8 +249,9 @@ app.get '/stats', (req, res) ->
   res.send """
   Stats:
     Uptime: #{uptimeDays}D #{uptimeHours}H #{uptimeMinutes}M #{uptimeSeconds}S
-    Number of events: #{numEvents}
-    Last event time: #{lastEventTime}
+    Number of events received: #{numReceivedEvents}
+    Number of events sent:     #{numSentEvents}
+    Number of post errors:     #{numBadKafkaPosts}
 
   Event trail (last 10 events):
 
