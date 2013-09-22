@@ -1,2 +1,3 @@
 #!/bin/bash
+cp asset/config.js target/
 node target/tracker.js

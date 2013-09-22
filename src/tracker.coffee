@@ -4,6 +4,9 @@ https = require('https')
 express = require('express')
 useragent = require('express-useragent')
 app = express()
+
+languageLookup = require('./language')
+
 config = require('./config')
 
 debug = false
@@ -182,7 +185,12 @@ app.get '/m.gif', (req, res) ->
   event['os'] = ua.OS or 'N/A'
   event['platform'] = ua.Platform or 'N/A'
 
-  event['language'] = req.acceptedLanguages[0] or 'N/A'
+  languageCode = req.acceptedLanguages[0]
+  if languageCode
+    language = languageLookup(languageCode)
+    language = "Unknown (#{languageCode})" unless language
+  else
+    event['language'] = 'N/A'
 
   events.push(event)
   eventTrail.unshift(event)

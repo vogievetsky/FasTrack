@@ -1,4 +1,4 @@
 #!/bin/bash
-coffee --compile --output target/ src/tracker.coffee
+coffee --compile --output target/ src/*
 cp -r geo-data/ target/geo-data/
 cp geo-data/* node_modules/geoip-lite/data/
