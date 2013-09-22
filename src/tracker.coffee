@@ -108,7 +108,7 @@ script = """
 
       a.S = session;
       a.N = num++;
-      a.P = document.location.pathname;
+      a.P = document.location.href;
       a.L = +new Date() - initTime;
       a.F = w.document.referrer || 'Direct';
       a.C = screen.width + 'x' + screen.height;
