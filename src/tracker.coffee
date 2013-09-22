@@ -100,18 +100,18 @@ script = """
     var tzm = String(now).match(/\\((\\w+)\\)/);
     w.fastrack = function(a) {
       if (Object.prototype.toString.call(a) != '[object Object]') return false;
-      var a = {
-        S: session,
-        N: num++,
-        P: document.location.pathname,
-        L: +new Date() - initTime,
-        F: w.document.referrer || 'Direct',
-        C: screen.width + 'x' + screen.height,
-        X: w.scrollX,
-        Y: w.scrollY,
-        O: now.getTimezoneOffset(),
-        Z: (tzm && tzm.length === 2) ? tzm[1] : 'N/A'
-      };
+
+      a.S = session;
+      a.N = num++;
+      a.P = document.location.pathname;
+      a.L = +new Date() - initTime;
+      a.F = w.document.referrer || 'Direct';
+      a.C = screen.width + 'x' + screen.height;
+      a.X = w.scrollX;
+      a.Y = w.scrollY;
+      a.O = now.getTimezoneOffset();
+      a.Z = (tzm && tzm.length === 2) ? tzm[1] : 'N/A';
+
       if ('innerWidth' in window) {
         a.W = w.innerWidth + 'x' + w.innerHeight;
       } else {
