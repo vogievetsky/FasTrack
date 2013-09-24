@@ -246,9 +246,9 @@ app.get '/geo', (req, res) ->
   res.send(ret)
   return
 
-startTime = Date.now()
+startTime = new Date()
 app.get '/stats', (req, res) ->
-  uptimeSeconds = Math.floor((Date.now() - startTime) / 1000)
+  uptimeSeconds = Math.floor((Date.now() - startTime.valueOf()) / 1000)
   uptimeMinutes = Math.floor(uptimeSeconds / 60); uptimeSeconds = uptimeSeconds % 60
   uptimeHours =   Math.floor(uptimeMinutes / 60); uptimeMinutes = uptimeMinutes % 60
   uptimeDays =    Math.floor(uptimeHours / 24);   uptimeHours = uptimeHours % 24
