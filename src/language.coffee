@@ -1,4 +1,16 @@
-rtl = {"ar":1, "dv":1, "fa":1, "ha":1, "he":1, "ks":1, "ku":1, "ps":1, "ur":1, "yi":1}
+rtl = {
+  "ar": 1
+  "dv": 1
+  "fa": 1
+  "ha": 1
+  "he": 1
+  "ks": 1
+  "ku": 1
+  "ps": 1
+  "ur": 1
+  "iw": 1
+  "yi": 1
+}
 
 language = {
   "aa": "Afar",
@@ -74,6 +86,7 @@ language = {
   "is": "Icelandic",
   "it": "Italian",
   "iu": "Inuktitut",
+  "iw": "Hebrew",
   "ja": "Japanese",
   "jv": "Javanese",
   "ka": "Georgian",
@@ -111,6 +124,7 @@ language = {
   "mt": "Maltese",
   "my": "Burmese",
   "na": "Nauruan",
+  "nb": "Norwegian",
   "nd": "North Ndebele",
   "ne": "Nepali",
   "ng": "Ndonga",
@@ -189,7 +203,7 @@ language = {
 module.exports = (code) ->
   return null unless typeof code is 'string'
   code = code.toLowerCase()
-  return null unless code.match(/^\w\w(?:[^a-z]\w\w)?$/)
+  return null unless code.match(/^\w\w(?:[^a-z]\w{2,3})?$/)
   code = code.substring(0, 2)
   return null unless language.hasOwnProperty(code)
   lang = language[code]

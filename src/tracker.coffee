@@ -8,7 +8,7 @@ languageLookup = require('./language')
 
 config = require('./config')
 
-version = '1.1'
+version = '1.1.1'
 debug = false
 
 events = []
