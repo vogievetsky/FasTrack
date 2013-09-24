@@ -1,4 +1,3 @@
-fs = require('fs')
 geoip = require('geoip-lite')
 https = require('https')
 express = require('express')
@@ -9,6 +8,7 @@ languageLookup = require('./language')
 
 config = require('./config')
 
+version = '1.1'
 debug = false
 
 events = []
@@ -101,11 +101,13 @@ emptyGif = Buffer('\x47\x49\x46\x38\x39\x61\x01
 script = """
 (function(w,h) {
   try {
-    var session = 'S' + (Math.random() * 1e10).toFixed();
+    var session = 'S' + Math.random().toFixed(8).substring(2);
     var num = 0;
     var now = new Date();
     var initTime = +now;
     var tzm = String(now).match(/\\((\\w+)\\)/);
+    var sx = (window.pageXOffset !== undefined) ? window.pageXOffset : (document.documentElement || document.body.parentNode || document.body).scrollLeft;
+    var sy = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement || document.body.parentNode || document.body).scrollTop;
     w.fastrack = function(a) {
       if (Object.prototype.toString.call(a) != '[object Object]') return false;
 
@@ -115,8 +117,7 @@ script = """
       a.L = +new Date() - initTime;
       a.F = w.document.referrer || 'Direct';
       a.C = screen.width + 'x' + screen.height;
-      a.X = w.scrollX;
-      a.Y = w.scrollY;
+      a.R = sx + 'x' + sy;
       a.O = now.getTimezoneOffset();
       a.Z = (tzm && tzm.length === 2) ? tzm[1] : 'N/A';
 
@@ -157,11 +158,11 @@ app.get '/m.gif', (req, res) ->
     k = 'timezone' if k is 'Z'
     k = 'timezone_offset' if k is 'O'
     k = 'session_length' if k is 'L'
-    k = 'scroll_x' if k is 'X'
-    k = 'scroll_y' if k is 'Y'
+    k = 'scroll' if k is 'R'
     event[k] = v
 
-  # Make sure that Time overrides whatever is already named time
+  # Make sure that these overrides whatever is already named time
+  event['tracker_version'] = version
   event['timestamp'] = (new Date()).toISOString()
 
   ip = req.ip
@@ -256,8 +257,10 @@ app.get '/stats', (req, res) ->
 
   res.set('Content-Type', 'text/plain')
   res.send """
+  FasTrack version #{version}
+
   Stats:
-    Uptime: #{uptimeDays}D #{uptimeHours}H #{uptimeMinutes}M #{uptimeSeconds}S
+    Uptime: #{uptimeDays}D #{uptimeHours}H #{uptimeMinutes}M #{uptimeSeconds}S  (since: #{startTime.toISOString()})
     Number of events received: #{numReceivedEvents}
     Number of events sent:     #{numSentEvents}
     Number of post errors:     #{numBadKafkaPosts}
