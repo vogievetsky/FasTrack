@@ -8,7 +8,7 @@ languageLookup = require('./language')
 
 config = require('./config')
 
-version = '1.1.1'
+version = '1.1.2'
 debug = false
 
 events = []
@@ -164,6 +164,16 @@ app.get '/m.gif', (req, res) ->
   # Make sure that these overrides whatever is already named time
   event['tracker_version'] = version
   event['timestamp'] = (new Date()).toISOString()
+
+  if event['referrer']
+    if event['referrer'] is 'Direct'
+      event['referrer_host'] = 'Direct'
+    else
+      m = event['referrer'].match(/https?:\/\/([^\/]+)(?:\/|$)/)
+      if m
+        event['referrer_host'] = m[1]
+      else
+        event['referrer_host'] = 'Unmatched'
 
   ip = req.ip
   event['ip'] = ip
