@@ -5,7 +5,7 @@
   },
   "version": "0.2.0",
   "engines": {
-    "node": "0.8.x"
+    "node": "0.10.18"
   },
   "dependencies": {
     "coffee-script": "1.6.3",
