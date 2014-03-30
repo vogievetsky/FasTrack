@@ -1,1 +1,1 @@
-FasTrack: A tiny web tracking service.
+FasTrack: A simple web tracking service.
