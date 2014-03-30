@@ -5,7 +5,7 @@
     "start": "server.js"
   },
   "engines": {
-    "node": "0.10.x"
+    "node": "v0.10.18"
   },
   "dependencies": {
     "async": "0.4.0",

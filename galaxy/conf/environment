@@ -1,1 +1,1 @@
-PATH=$PATH:`pwd`/node/bin
+PATH=$PATH:`pwd`/node/current/bin
