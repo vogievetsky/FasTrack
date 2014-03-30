@@ -8,24 +8,28 @@ languageLookup = require('./language')
 
 config = require('./config')
 
-version = '1.1.2'
+version = require('./version')
 debug = false
 
 events = []
-numReceivedEvents = 0
-numSentEvents = 0
-numBadKafkaPosts = 0
+stats = {
+  receivedEvents: 0
+  sentEvents: 0
+  totalPosts: 0
+  goodPosts: 0
+  badPosts: 0
+}
 
 eventTrail = []
 
 if config.kafka
   console.log 'Got kafka config'
   sending = false
-  lastSend = new Date()
+  lastSend = Date.now()
   sendEvents = ->
     return if sending
     return unless events.length
-    now = new Date()
+    now = Date.now()
     return if events.length < 1000 and now - lastSend < 1000
 
     sending = true
@@ -40,10 +44,12 @@ if config.kafka
       path: config.kafka.path
       auth: config.kafka.username + ':' + config.kafka.password
     }, (res) ->
+      stats.totalPosts++
       if 200 <= res.statusCode < 300
-        numSentEvents += eventsToSend.length
+        stats.goodPosts++
+        stats.sentEvents += eventsToSend.length
       else
-        numBadKafkaPosts++
+        stats.badPosts++
         console.log('----------------------------------------------')
         console.log('STATUS: ' + res.statusCode)
         console.log('HEADERS: ' +  JSON.stringify(res.headers))
@@ -207,7 +213,7 @@ app.get '/m.gif', (req, res) ->
   events.push(event)
   eventTrail.unshift(event)
   eventTrail.pop() while eventTrail.length > 10
-  numReceivedEvents++
+  stats.receivedEvents++
 
   res.set('Content-Type', 'image/gif')
   res.send(emptyGif)
@@ -267,18 +273,20 @@ app.get '/stats', (req, res) ->
 
   res.set('Content-Type', 'text/plain')
   res.send """
-  FasTrack version #{version}
+    FasTrack version #{version}
 
-  Stats:
-    Uptime: #{uptimeDays}D #{uptimeHours}H #{uptimeMinutes}M #{uptimeSeconds}S  (since: #{startTime.toISOString()})
-    Number of events received: #{numReceivedEvents}
-    Number of events sent:     #{numSentEvents}
-    Number of post errors:     #{numBadKafkaPosts}
+    Stats:
+      Uptime: #{uptimeDays}D #{uptimeHours}H #{uptimeMinutes}M #{uptimeSeconds}S  (since: #{startTime.toISOString()})
+      Number of events received:  #{stats.receivedEvents}
+      Number of events sent:      #{stats.sentEvents}
+      Number of posts:            #{stats.totalPosts}
+      Number of successful posts: #{stats.goodPosts}
+      Number of post errors:      #{stats.badPosts}
 
-  Event trail (last 10 events):
+    Event trail (last 10 events):
 
-  #{eventTrailStr}
-  """
+    #{eventTrailStr}
+    """
   return
 
 console.log "FasTrack started server on port 9090"

@@ -1,2 +1,2 @@
 #!/bin/bash
-coffee --compile --watch --output target/ src/tracker.coffee &
+coffee --compile --watch --output target/ src/* &
