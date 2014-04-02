@@ -4,8 +4,6 @@ express = require('express')
 useragent = require('express-useragent')
 app = express()
 
-languageLookup = require('./language')
-
 config = require('./config')
 
 version = require('./version')
@@ -203,11 +201,11 @@ app.get '/m.gif', (req, res) ->
   event['platform'] = ua.Platform or 'N/A'
 
   languageCode = req.acceptedLanguages[0]
-  if languageCode
-    language = languageLookup(languageCode)
-    language = "Unknown (#{languageCode})" unless language
+  if typeof languageCode is 'string'
+    # Make ISO 639-1
+    language = languageCode.substring(0, 2).toLowerCase()
   else
-    language = 'N/A'
+    language = 'zx'
   event['language'] = language
 
   events.push(event)
