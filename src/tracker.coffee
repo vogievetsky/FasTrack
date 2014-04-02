@@ -16,6 +16,7 @@ stats = {
   totalPosts: 0
   goodPosts: 0
   badPosts: 0
+  errorPosts: 0
 }
 
 eventTrail = []
@@ -52,26 +53,14 @@ if config.kafka
         console.log('STATUS: ' + res.statusCode)
         console.log('HEADERS: ' +  JSON.stringify(res.headers))
 
-      # chunks = []
-      # res.on 'data', (chunk) ->
-      #   chunks.push(chunk)
-      #   return
-
-      # res.on 'close', (err) ->
-      #   callback({
-      #     error: 'close'
-      #     message: err
-      #   })
-      #   return
-
-      # res.on 'end', ->
-      #   console.log  chunks.join('')
-
       sending = false
       return
 
     req.on 'error', (e) ->
-      console.log('problem with request: ' + e.message);
+      console.log('problem with request: ' + e.message)
+      stats.errorPosts++
+      sending = false
+      return
 
     # write data to request body
     for event in eventsToSend
@@ -275,11 +264,12 @@ app.get '/stats', (req, res) ->
 
     Stats:
       Uptime: #{uptimeDays}D #{uptimeHours}H #{uptimeMinutes}M #{uptimeSeconds}S  (since: #{startTime.toISOString()})
-      Number of events received:  #{stats.receivedEvents}
-      Number of events sent:      #{stats.sentEvents}
-      Number of posts:            #{stats.totalPosts}
-      Number of successful posts: #{stats.goodPosts}
-      Number of post errors:      #{stats.badPosts}
+      Number of events received:    #{stats.receivedEvents}
+      Number of events sent:        #{stats.sentEvents}
+      Number of posts:              #{stats.totalPosts}
+      Number of successful posts:   #{stats.goodPosts}
+      Number of unsuccessful posts: #{stats.badPosts}
+      Number of post errors:        #{stats.errorPosts}
 
     Event trail (last 10 events):
 
